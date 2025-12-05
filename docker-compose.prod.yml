@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - API_URL=https://api-pioneros.bitforges.com
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3500:3500"
+    environment:
+      - NODE_ENV=production
+      - PORT=3500
+      - HOST=0.0.0.0
+      - MONGO_URI=mongodb://mongo:27017/transportsys
+      - CORS_ORIGIN=https://pioneros.bitforges.com,https://api-pioneros.bitforges.com
+    depends_on:
+      - mongo
+    restart: unless-stopped
+
+  pdf-service:
+    build: 
+      context: ./pdf-service
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:6
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=transportsys
+    volumes:
+      - mongo_data:/data/db
+      - ./dump:/docker-entrypoint-initdb.d/dump
+    command: >
+      bash -c "
+        echo '>>> Iniciando MongoDB...';
+        docker-entrypoint.sh mongod --bind_ip_all
+      "
+
+volumes:
+  mongo_data:
+
+networks:
+  default:
+    name: transportsys-network

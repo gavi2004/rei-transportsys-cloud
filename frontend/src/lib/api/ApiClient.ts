@@ -399,6 +399,12 @@ export class ApiClient {
         this.baseUrl = baseUrl;
         this._debugMode = false;
         // Token will be loaded lazily or set via setToken
+        
+        // Log de configuración en desarrollo
+        if (typeof window !== 'undefined' && window.location.hostname.includes('localhost')) {
+            console.log('🔧 API Client configurado para desarrollo');
+            console.log('📡 Base URL:', this.baseUrl);
+        }
     }
 
     setToken(token: string) {

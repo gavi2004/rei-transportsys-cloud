@@ -16,10 +16,40 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://mongo:27017/transportsys';
 // Middleware básico
 // app.use(cors()); // Habilitar CORS para todas las rutas
 
+// Configuración CORS para múltiples dominios
+const allowedOrigins = [
+  'https://pioneros.bitforges.com',     // Frontend principal
+  'https://api-pioneros.bitforges.com', // API
+  'http://localhost:3000',              // Desarrollo local frontend
+  'http://localhost:5173',              // Vite dev server
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173'
+];
+
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || '*', // '*' solo para fallback local
-  credentials: true                       // si vas a enviar cookies / Authorization
+  origin: function (origin, callback) {
+    // Permitir requests sin origin (como mobile apps o Postman)
+    if (!origin) return callback(null, true);
+    
+    // Si está en la lista de orígenes permitidos
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // En desarrollo, permitir cualquier localhost
+    if (process.env.NODE_ENV !== 'production' && 
+        (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+      return callback(null, true);
+    }
+    
+    callback(new Error('No permitido por CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
 };
+
 app.use(cors(corsOptions));
 
 app.use(useragent.express());
@@ -137,6 +167,10 @@ const startServer = async () => {
             console.log(`📡 API corriendo en http://${HOST}:${PORT}`);
             console.log(`📝 Estado: http://${HOST}:${PORT}/status`);
             console.log(`🔗 API Test: http://${HOST}:${PORT}/api/test`);
+            console.log(`🌍 CORS configurado para:`, allowedOrigins);
+            console.log(`📄 Variables de entorno:`);
+            console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+            console.log(`   CORS_ORIGIN: ${process.env.CORS_ORIGIN || 'auto'}`);
         });
     } catch (error) {
         console.error('❌ Error al iniciar el servidor:', error);
